@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Formatador de Chamados - NOC / Lanlink</title>
+  <style>
+    /* --- Mantive seu CSS original e acrescentei apenas regras pequenas para abas, modal e cards --- */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f6f9;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px 32px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+      color: #0066cc;
+      text-align: center;
+    }
+    h2 {
+      font-size: 20px;
+      margin-top: 32px;
+      margin-bottom: 8px;
+      color: #444;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 6px;
+    }
+    p {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #555;
+    }
+    label {
+      display: block;
+      margin-top: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #222;
+    }
+    textarea, input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border 0.2s;
+    }
+    textarea:focus, input:focus {
+      border-color: #0066cc;
+      outline: none;
+    }
+    textarea { resize: vertical; }
+    .buttons { margin-top: 16px; display:flex; gap:10px; flex-wrap:wrap; }
+    button {
+      flex: 1;
+      min-width: 120px;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background: #0066cc;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    button:hover { background: #0055aa; transform: translateY(-2px); }
+    button.secondary { background: #666; }
+    button.secondary:hover { background: #444; }
+    .block {
+      border: 1px solid #ddd;
+      padding: 16px;
+      border-radius: 10px;
+      margin-top: 20px;
+      background: #fafafa;
+    }
+    pre {
+      background: #f0f4f8;
+      padding: 14px;
+      border-radius: 8px;
+      font-family: Consolas, monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+      margin-top: 12px;
+    }
+    #nomeResultado { margin-top: 12px; font-weight: bold; font-size: 16px; color: #222; }
+
+    /* === ALERTA DESTACADO (inline) === */
+    .alerta-horario {
+      background: #ffcccc;
+      color: #990000;
+      border: 2px solid #cc0000;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 20px;
+      font-size: 16px;
+      font-weight: bold;
+      text-align: center;
+      display: none;
+      animation: piscar 1s infinite;
+    }
+    @keyframes piscar {
+      0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; }
+    }
+
+    /* === ABAS (pequena barra de navegação) --- mantive discreto para não alterar layout */
+    .tabs { display:flex; gap:8px; justify-content:flex-start; margin-top: 18px; margin-bottom:6px; }
+    .tabs button { padding:8px 12px; border-radius:8px; border:1px solid #d0d7e0; background:#fff; cursor:pointer; font-weight:600; color:#333; }
+    .tabs button.active { background:#0066cc; color:#fff; border-color:#0055aa; }
+
+    /* === Modal de Alerta (visualmente chamativo, sem som) === */
+    .modal {
+      display:none;
+      position:fixed;
+      top:0; left:0; right:0; bottom:0;
+      background: rgba(0,0,0,0.55);
+      z-index:9999;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+    .modal-content {
+      background:#fff;
+      border-radius:10px;
+      padding:20px;
+      max-width:560px;
+      width:100%;
+      border: 3px solid #cc0000;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+      text-align:center;
+      font-weight:700;
+      color:#990000;
+      font-size:18px;
+    }
+    .modal-content button {
+      margin-top:14px;
+      padding:10px 14px;
+      border-radius:8px;
+      border:none;
+      background:#cc0000;
+      color:#fff;
+      cursor:pointer;
+      font-weight:700;
+    }
+
+    /* === Central de Apoio (cards) === */
+    .card { border-radius:10px; padding:16px; margin:14px 0; background:#f9f9f9; box-shadow:0 2px 8px rgba(0,0,0,0.06); border-left:6px solid #0066cc; }
+    .card h3 { margin:0 0 8px 0; color:#0066cc; }
+    .card p { margin:6px 0; color:#333; }
+    .card.enel { background:#fff4f4; border-left:6px solid #cc0000; box-shadow:0 4px 12px rgba(204,0,0,0.08); }
+    .card.enel h3 { color:#cc0000; }
+
+    /* responsive small tweaks */
+    @media (max-width:600px) {
+      .buttons { flex-direction:column; }
+      button { min-width:unset; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Organizador de Chamados — NOC — ETICE / Lanlink</h1> 
+
+    <!-- Abas: Formatador (padrão) e Central de Apoio (importada do Código 2) --> <!-- Home = Formatador, troquei o nome da Aba de Formatador para Home -->
+    <div class="tabs" role="tablist">
+      <button id="tab-formatador" class="active" aria-controls="formatador">Home</button>
+      <button id="tab-apoio" aria-controls="apoio">Central de Apoio</button>
+    </div>
+
+    <!-- === ABA FORMATADOR (seu Código 1, mantido) === -->
+    <div id="formatador">
+      <p>Cole abaixo a linha de <strong>ALERTA</strong> do Zabbix, informe o atendente e gere os blocos prontos.</p>
+
+      <label>Nome do atendente</label>
+      <input id="attendant" placeholder="Ex: Davi Diniz Marques"/>
+
+      <label>ALERTA (Linha completa do Zabbix - Hora até Incidente)</label>
+      <textarea id="alerta" rows="3" placeholder="Ex: 11:27:15	Desastre	INCIDENTE		ACA-SW00-048164_SEDUC_Liceu_EEM_Maria_Alice_Ramos	ACA-SW00-048164_SEDUC_Liceu_EEM_Maria_Alice_Ramos está inacessível"></textarea>
+
+      <label>Afetados (um por linha)</label>
+      <textarea id="affected" rows="4" placeholder="Ex:
+Port GigabitEthernet0/0/2 is down on ACA-SW00-048086_acarau (ACA_DWDM --> EEM LICEU MARIA ALICE)
+Port XGigabitEthernet0/0/33 is down on MBC-SW00-066006-MBC_100G ()
+ALC-AP00-CC-015134_ALCANTRAS_PRACA_MATRIZ está inacessível"></textarea>
+
+      <div class="buttons">
+        <button id="generate">Gerar</button>
+        <button id="clear" class="secondary">Limpar</button>
+        <button id="saveName" class="secondary">Salvar nome</button>
+      </div>
+
+      <!-- ALERTA DE HORÁRIO (inline, preservado do Código 1) -->
+      <div id="alertaHorario" class="alerta-horario" aria-live="polite">
+        ⚠️ (ATENÇÃO — Horário de Acionamento. Verifique se esse alerta requer acionamento!)
+      </div>
+
+      <div id="outputs">
+        <div id="ifsBlock" class="block" style="display:none">
+          <strong>IFS Assyst</strong>
+          <pre id="ifsText"></pre>
+          <div class="buttons"><button id="copyIfs">Copiar IFS</button></div>
+        </div>
+
+        <div id="etoolsBlock" class="block" style="display:none">
+          <strong>Etools</strong>
+          <pre id="etoolsText"></pre>
+          <div class="buttons"><button id="copyEtools">Copiar Etools</button></div>
+        </div>
+      </div>
+
+      <!-- CONSULTA DE NOMENCLATURA -->
+      <h2>Consulta de Nomenclatura</h2>
+      <p>Digite a sigla da localidade para obter o nome completo.</p>
+      <label>Sigla da Localidade</label>
+      <input id="siglaInput" placeholder="Ex: RSU, GSP, FTZ" />
+      <div class="buttons">
+        <button id="buscar">Buscar</button>
+      </div>
+      <div id="nomeResultado"></div>
+    </div>
+
+    <!-- === ABA CENTRAL DE APOIO (conteúdo importado do Código 2) === -->
+    <div id="apoio" style="display:none; margin-top:10px;">
+      <h2>Central de Apoio</h2>
+
+      <div class="card enel">
+        <h3>⚡ ACIONAMENTO ENEL</h3>
+        <p><strong>CHAMADO COM A ENEL:</strong></p>
+        <p>DADOS ETICE: EMPRESA DE TECNOLOGIA DA INFORMAÇÃO<br>
+        CNPJ: 03.773.788/0001-67<br>
+        Endereço: Avenida Pontes Vieira, 220</p>
+        <p><strong>Informar para ENEL:</strong><br>
+        Nome do cliente<br>
+        Número do Cliente ENEL<br>
+        Endereço<br>
+        Cidade</p>
+        <p><strong>Telefones de contato:</strong><br>
+        ENEL: 0800 285 0196<br>
+        Central Corporativa: 0800 285 7887</p>
+        <p><strong>Instrução:</strong> Caso perguntem se a falta de energia é apenas na localidade, responder:<br>
+         “Trata-se de cliente preferencial da ENEL, que está realizando monitoramento remoto em Fortaleza.”</p>
+        <p><strong>Exceções:</strong> Castanhão, Banabuiú e Milagres (Nesses casos, confirmar previamente com o cliente.)</p>
+        <p><strong>Observação importante:</strong> Número do cliente ENEL, informar apenas os números antes do traço.<br>
+        Exemplo: ACARAPE: 4019976-2 → deve ser informado apenas 4019976.<br>
+        Nunca esclarecer dúvidas com o atendente da ENEL. Sempre ligar e registrar a falha.</p>
+      </div>
+
+      <div class="card">
+        <h3>🗺️ MAPAS PARA ABRIR</h3>
+        <pre>
+1 - A_CDC Fortaleza (OBS: Mapa para acionamento./ Sobreaviso).
+2 - A_CDC Lógico - Interior (OBS: Mapa para acionamento./ Sobreaviso).
+3 - CDC Lógico - Interior - Outras cidades do Ceará / (OBS: Horário comercial)
+4 - CDC Fortaleza / (OBS: Horário comercial)
+
+Local para encontrar os mapas ETICE no Zabbix:
+- Monitoring > Maps > All Maps
+- Monitoramento > Mapas > Todos os Mapas
+        </pre>
+      </div>
+
+      <div class="card">
+        <h3>📝 REGISTRO NO ETOOLS</h3>
+        <pre>
+Chamados de Porta e Praça:
+
+- Não é necessário efetuar acionamento. Apenas abrir chamado no Assyst.
+
+- Caso o incidente de porta seja identificado nos mapas de acionamento fora do horário comercial, deve ser realizado o acionamento, entrando em contato com o sobreaviso.
+
+- O número de sobreaviso pode ser consultado no Etools, na aba Sobreaviso.
+
+<strong>IMPORTANTE:</strong>
+<strong>Incidentes que não precisam ser publicados no Etools:</strong>
+<strong>- Postos avançados</strong>
+<strong>- Residência Oficial</strong>
+<strong>- Casa Militar</strong>
+<strong>- Incidentes de câmeras</strong>
+<strong>- Incidentes de OLT indisponível</strong>
+<strong>- Parques ou praças</strong>
+        </pre>
+      </div>
+
+      <div class="card">
+        <h3>💾⚠️ TIPOS DE ALERTA DE DISCO</h3>
+        <pre>
+(Free disk space is less than 10% on volume / ALERTA CRITICO)
+
+Orientações:
+
+- Registrar a dúvida no grupo do WhatsApp.
+
+- Caso o incidente ocorra fora do horário comercial, realizar o acionamento do sobreaviso de Aplicação.
+
+- Encaminhar para a fila 3º Nível – Sustentação – ETICE.
+        </pre>
+      </div>
+
+      <div class="card">
+        <h3>💬 PADRONIZAÇÕES / SCRIPTS</h3>
+        <pre>
+FRASE DE PADRONIZAÇÃO ENCERRAMENTO ETICE:
+
+Falha normalizada sem intervenção da ETICE em: 00/00/0000, às 00:00:00. (Preencha a data e hora).
+
++ Adiciona o print da normalização no Zabbix.
+
+Tipo de resolução: Padrão Etice
+
+----------------------------------------------------------------------------------------------------------
+
+FRASE - SEM CONTATO NO ETOOLS:
+
+Infelizmente, não foi possível estabelecer contato para dar continuidade à tratativa, uma vez que não há nenhum registro de contato disponível no Etools.
+
+----------------------------------------------------------------------------------------------------------
+
+SCRIPT DE LIGAÇÃO:
+
+Monitoramento ETICE me chamo (Seu nome), com quem eu falo?
+Verifiquei que houve uma queda de rede na (unidade). Poderia me informar se houve falha elétrica no local, alguma manutenção em andamento e se os equipamentos estão ligados?
+        </pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- === Modal (alerta de acionamento, sem som) === -->
+  <div id="alertModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-content">
+      ⚠️ ATENÇÃO — Horário de Acionamento. Verifique se esse alerta requer acionamento!
+      <br>
+      <button id="closeModal">Fechar</button>
+    </div>
+  </div>
+
+  <script>
+    // --- Siglas (mantive exatamente) ---
+    const rawSiglas = `CRE	Carire/Ce	IBC	Ibicuitinga/Ce	MLG	Milagres/Ce	QTP	Quiterianopolis/Ce
+ABR	Abaiara/Ce	CRR	Caririacu/Ce	ICP	Icapui/Ce	MIL	Milha/Ce	QXD	Quixada/Ce
+ACP	Acarape/Ce	CRU	Carius/Ce	ICO	Ico/Ce	MIR	Miraima/Ce	QXL	Quixelo/Ce
+ACA	Acarau/Ce	CRN	Carnaubal/Ce	IGT	Iguatu/Ce	MSV	Missao Velha/Ce	QXB	Quixeramobim/Ce
+ACR	Acopiara/Ce	CSL	Cascavel/Ce	IND	Independencia/Ce	MBC	Mombaca/Ce	QXR	Quixere/Ce
+ABA	Aiuaba/Ce	CTA	Catarina/Ce	IPP	Ipaporanga/Ce	MTB	Monsenhor Tabosa/Ce	RDC	Redencao/Ce
+ALC	Alcantaras/Ce	CTD	Catunda/Ce	IPM	Ipaumirim/Ce	MNV	Morada Nova/Ce	RTB	Reriutaba/Ce
+ALT	Altaneira/Ce	CCA	Caucaia/Ce	IPU	Ipu/Ce	MJO	Moraujo/Ce	RSU	Russas/Ce
+AST	Alto Santo/Ce	CDO	Cedro/Ce	IPS	Ipueiras/Ce	MRR	Morrinhos/Ce	SBO	Saboeiro/Ce
+AMN	Amontada/Ce	CHA	Chaval/Ce	IRC	Iracema/Ce	MBO	Mucambo/Ce	SLT	Salitre/Ce
+ANN	Antonina Do Norte/Ce	CHR	Choro/Ce	IRB	Iraucuba/Ce	MGU	Mulungu/Ce	STA	Santana Do Acarau/Ce
+APU	Apuiares/Ce	CHZ	Chorozinho/Ce	ITC	Itaicaba/Ce	NVO	Nova Olinda/Ce	STC	Santana Do Cariri/Ce
+AQZ	Aquiraz/Ce	CAU	Coreau/Ce	ITG	Itaitinga/Ce	NVR	Nova Russas/Ce	SQT	Santa Quiteria/Ce
+ART	Aracati/Ce	CAT	Crateus/Ce	ITE	Itapage/Ce	NVT	Novo Oriente/Ce	SBN	Sao Benedito/Ce
+ARC	Aracoiaba/Ce	CRT	Crato/Ce	ITK	Itapipoca/Ce	OCR	Ocara/Ce	SGA	Sao Goncalo Do Amarante/Ce
+ARR	Ararenda/Ce	CRO	Croata/Ce	ITP	Itapiuna/Ce	ORS	Oros/Ce	SJJ	Sao Joao Do Jaguaribe/Ce
+ARP	Araripe/Ce	CRZ	Cruz/Ce	ITR	Itarema/Ce	PCJ	Pacajus/Ce	SLC	Sao Luiz Do Curu/Ce
+ATB	Aratuba/Ce	DIP	Deputado Irapuan Ribeiro/Ce	ITT	Itatira/Ce	PBA	Pacatuba/Ce	SNP	Senador Pompeu/Ce
+ANZ	Arneiroz/Ce	ERE	Erere/Ce	JGT	Jaguaretama/Ce	PCT	Pacoti/Ce	SNS	Senador Sa/Ce
+ASS	Assare/Ce	ESB	Eusebio/Ce	JGR	Jaguaribara/Ce	PCA	Pacuja/Ce	SBU	Sobral/Ce
+AUR	Aurora/Ce	FBR	Farias Brito/Ce	JGB	Jaguaribe/Ce	PLH	Palhano/Ce	SLP	Solonopole/Ce
+BXO	Baixio/Ce	FRQ	Forquilha/Ce	JGA	Jaguaruana/Ce	PMC	Palmacia/Ce	TBN	Tabuleiro Do Norte/Ce
+BNB	Banabuiu/Ce	FTZ	Fortaleza/Ce	JRD	Jardim/Ce	PRU	Paracuru/Ce	TBL	Tamboril/Ce
+BBL	Barbalha/Ce	FTM	Fortim/Ce	JTI	Jati/Ce	PPB	Paraipaba/Ce	TRR	Tarrafas/Ce
+BRA	Barreira/Ce	FRE	Frecheirinha/Ce	JIJ	Jijoca De Jericoacoara/Ce	PBU	Parambu/Ce	TAA	Taua/Ce
+BRR	Barro/Ce	GSP	General Sampaio/Ce	JZN	Juazeiro Do Norte/Ce	PTI	Paramoti/Ce	TJC	Tejucuoca/Ce
+BRQ	Barroquinha/Ce	GRC	Graca/Ce	JUC	Jucas/Ce	PBR	Pedra Branca/Ce	TNG	Tiangua/Ce
+BRT	Baturite/Ce	GRJ	Granja/Ce	LVM	Lavras Da Mangabeira/Ce	PNF	Penaforte/Ce	TRA	Trairi/Ce
+BBR	Beberibe/Ce	GJO	Granjeiro/Ce	LMN	Limoeiro Do Norte/Ce	PTC	Pentecoste/Ce	TUU	Tururu/Ce
+BLC	Bela Cruz/Ce	GRO	Groiaras/Ce	MDN	Madalena/Ce	PRR	Pereiro/Ce	UBJ	Ubajara/Ce
+BVG	Boa Viagem/Ce	GUA	Guaiuba/Ce	DID	Maracanau/Ce	PDT	Pindoretama/Ce	UMR	Umari/Ce
+BRJ	Brejo Santo/Ce	GDN	Guaraciaba Do Norte/Ce	MRG	Maranguape/Ce	PQC	Piquet Carneiro/Ce	UMM	Umirim/Ce
+CMM	Camocim/Ce	GRM	Guaramiranga/Ce	MRC	Marco/Ce	PFE	Pires Ferreira/Ce	URB	Uruburetama/Ce
+CSS	Campos Sales/Ce	HID	Hidrolandia/Ce	MTN	Martinopole/Ce	PRG	Poranga/Ce	URC	Uruoca/Ce
+CND	Caninde/Ce	HZT	Horizonte/Ce	MSP	Massape/Ce	PRT	Porteiras/Ce	ARU	Varjota/Ce
+CPS	Capistrano/Ce	IBT	Ibaretama/Ce	MAU	Mauriti/Ce	PTG	Potengi/Ce	VZA	Varzea Alegre/Ce
+CRD	Caridade/Ce	IBP	Ibiapina/Ce	MCA	Meruoca/Ce	PTT	Potiretama/Ce	VCS	Vicosa Do Ceara/Ce`;
+    const siglaMap = {};
+    const regex = /\b([A-Z]{2,4})\s+([^\n/]+?)\/Ce/gi;
+    let m;
+    while ((m = regex.exec(rawSiglas)) !== null) {
+      siglaMap[m[1].trim().toUpperCase()] = m[2].trim();
+    }
+
+    function findSigla(text) {
+      if (!text) return null;
+      const words = text.replace(/[_.]/g,' ').split(/\s+/);
+      for (const w of words) {
+        const up = w.toUpperCase().replace(/[^A-Z0-9]/g,'');
+        if (siglaMap[up]) return up;
+      }
+      for (const k in siglaMap) {
+        if (new RegExp('\\b'+k+'\\b','i').test(text)) return k;
+      }
+      return null;
+    }
+
+    // === Elementos ===
+    const attendantEl = document.getElementById('attendant');
+    const alertaEl = document.getElementById('alerta');
+    const affectedEl = document.getElementById('affected');
+    const generateBtn = document.getElementById('generate');
+    const clearBtn = document.getElementById('clear');
+    const saveNameBtn = document.getElementById('saveName');
+    const ifsBlock = document.getElementById('ifsBlock');
+    const ifsText = document.getElementById('ifsText');
+    const etoolsBlock = document.getElementById('etoolsBlock');
+    const etoolsText = document.getElementById('etoolsText');
+    const copyIfs = document.getElementById('copyIfs');
+    const copyEtools = document.getElementById('copyEtools');
+    const alertaHorario = document.getElementById('alertaHorario');
+
+    // modal
+    const alertModal = document.getElementById('alertModal');
+    const closeModalBtn = document.getElementById('closeModal');
+
+    // === Salvamento do nome ===
+    const savedName = localStorage.getItem('noc_attendant');
+    if (savedName) attendantEl.value = savedName;
+
+    saveNameBtn.addEventListener('click', () => {
+      localStorage.setItem('noc_attendant', attendantEl.value.trim());
+      alert('Nome salvo localmente.');
+    });
+
+    // === Função para verificar horário de acionamento ===
+    function precisaExibirAlerta() {
+      const agora = new Date();
+      const dia = agora.getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
+      const hora = agora.getHours();
+      // Sábado (6) e Domingo (0) -> alerta o dia inteiro
+      if (dia === 0 || dia === 6) return true;
+      // Segunda a sexta: entre 18:00 e 07:59 -> alerta
+      if (hora >= 18 || hora < 8) return true;
+      return false;
+    }
+
+    // === Botões de ação ===
+    clearBtn.addEventListener('click', () => {
+      alertaEl.value = '';
+      affectedEl.value = '';
+      ifsBlock.style.display = 'none';
+      etoolsBlock.style.display = 'none';
+      alertaHorario.style.display = 'none';
+      // fechar modal se aberto
+      alertModal.style.display = 'none';
+      alertModal.setAttribute('aria-hidden', 'true');
+    });
+
+    generateBtn.addEventListener('click', () => {
+      const attendant = attendantEl.value.trim() || '(sem nome)';
+      const alerta = alertaEl.value.trim();
+      const affected = affectedEl.value.trim();
+      if (!alerta){ alert('Cole a linha completa do ALERTA do Zabbix.'); return; }
+
+      // Mostrar inline ALERTA (mantive)
+      if (precisaExibirAlerta()) {
+        alertaHorario.style.display = 'block';
+        // Mostrar modal chamativo (sem som)
+        alertModal.style.display = 'flex';
+        alertModal.setAttribute('aria-hidden', 'false');
+      } else {
+        alertaHorario.style.display = 'none';
+        alertModal.style.display = 'none';
+        alertModal.setAttribute('aria-hidden', 'true');
+      }
+
+      const parts = alerta.split(/\s+/);
+      let hora = parts[0];
+      if (!/^\d{2}:\d{2}:\d{2}$/.test(hora)) hora = '(hora não detectada)';
+      const incidente = alerta.replace(/^\S+\s+\S+\s+\S+\s+\S+\s+/,'');
+
+      const dataHoje = new Date().toLocaleDateString('pt-BR');
+      const afetadosFormatado = affected ? affected.split(/\n/).map(a=>a.trim()).filter(a=>a).join('\n') : '-';
+
+      // === IFS Assyst (formatação solicitada) ===
+      const ifsLines = [];
+      ifsLines.push(`<strong>RESUMO:</strong>   ${incidente}`);
+      ifsLines.push(`<strong>\nMonitoramento Etice:</strong> ${attendant}`);
+      ifsLines.push(`<strong>\nData:</strong> ${dataHoje}`);
+      ifsLines.push(`<strong>\nHora:</strong> ${hora}`);
+      ifsLines.push(`<strong>\nIncidente:</strong>`);
+      ifsLines.push(`${incidente}`);
+      ifsLines.push(`<strong>\nAfetados:</strong>`);
+      ifsLines.push(`${afetadosFormatado}`);
+      ifsText.innerHTML = ifsLines.join('\n');
+      ifsBlock.style.display = 'block';
+
+      // === Etools ===
+      const sigla = findSigla(incidente);
+      const localidade = sigla ? siglaMap[sigla].toUpperCase() : '(NÃO DETECTADO)';
+      const incidenteLimpo = incidente.replace(/[_-]/g, ' ');
+      const problema = `Indisponibilidade em ${localidade} ${incidenteLimpo.toUpperCase()}`;
+
+      const etoolsLines = [];
+      etoolsLines.push(`<strong>Problema:</strong> ${problema}`);
+      etoolsLines.push(`<strong>\nLocalidade:</strong> ${localidade}`);
+      etoolsLines.push(`<strong>\nData:</strong> ${dataHoje}`);
+      etoolsLines.push(`<strong>\nHora:</strong> ${hora}`);
+      etoolsText.innerHTML = etoolsLines.join('\n');
+      etoolsBlock.style.display = 'block';
+    });
+
+    // Close modal
+    closeModalBtn.addEventListener('click', () => {
+      alertModal.style.display = 'none';
+      alertModal.setAttribute('aria-hidden', 'true');
+    });
+
+    // === Função de cópia (mantém formatação) ===
+    function copyWithFormatting(el, label) {
+      const inner = el.innerHTML || '';
+      const safeInner = inner.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n/g,'<br>');
+      const htmlFragment = `<div xmlns="http://www.w3.org/1999/xhtml" style="white-space:pre-wrap; font-family: Consolas, monospace; font-size:14px;">${safeInner}</div>`;
+      const plainText = el.innerText || el.textContent || '';
+
+      if (navigator.clipboard && navigator.clipboard.write) {
+        const blobHtml = new Blob([htmlFragment], { type: 'text/html' });
+        const blobPlain = new Blob([plainText], { type: 'text/plain' });
+        const item = new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobPlain });
+        navigator.clipboard.write([item]).then(() => {
+          alert(`Texto do ${label} copiado.`);
+        }).catch(() => { fallbackCopy(label); });
+      } else {
+        fallbackCopy(label);
+      }
+
+      function fallbackCopy(label) {
+        const temp = document.createElement('div');
+        temp.style.position = 'absolute';
+        temp.style.left = '-9999px';
+        temp.setAttribute('contenteditable', 'true');
+        temp.innerHTML = htmlFragment;
+        document.body.appendChild(temp);
+
+        const range = document.createRange();
+        range.selectNodeContents(temp);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+
+        try {
+          const ok = document.execCommand('copy');
+          if (ok) alert(`Texto do ${label} copiado (fallback).`);
+          else navigator.clipboard.writeText(plainText).then(()=> alert(`Texto do ${label} copiado como texto.`));
+        } catch {
+          navigator.clipboard.writeText(plainText).then(()=> alert(`Texto do ${label} copiado como texto.`));
+        }
+
+        sel.removeAllRanges();
+        document.body.removeChild(temp);
+      }
+    }
+
+    copyIfs.addEventListener('click', () => copyWithFormatting(ifsText, 'IFS'));
+    copyEtools.addEventListener('click', () => copyWithFormatting(etoolsText, 'Etools'));
+
+    // === Consulta de Nomenclatura ===
+    const siglaInput = document.getElementById('siglaInput');
+    const buscarBtn = document.getElementById('buscar');
+    const nomeResultado = document.getElementById('nomeResultado');
+
+    buscarBtn.addEventListener('click', () => {
+      const sigla = siglaInput.value.trim().toUpperCase();
+      if (!sigla) { nomeResultado.textContent = 'Digite uma sigla.'; return; }
+      if (siglaMap[sigla]) {
+        nomeResultado.textContent = siglaMap[sigla].toUpperCase();
+      } else {
+        nomeResultado.textContent = 'Localidade não encontrada.';
+      }
+    });
+
+    // === Controle de abas (Formatador / Central de Apoio) ===
+    const tabFormatadorBtn = document.getElementById('tab-formatador');
+    const tabApoioBtn = document.getElementById('tab-apoio');
+    const formatadorDiv = document.getElementById('formatador');
+    const apoioDiv = document.getElementById('apoio');
+
+    tabFormatadorBtn.addEventListener('click', () => {
+      tabFormatadorBtn.classList.add('active');
+      tabApoioBtn.classList.remove('active');
+      formatadorDiv.style.display = '';
+      apoioDiv.style.display = 'none';
+    });
+    tabApoioBtn.addEventListener('click', () => {
+      tabApoioBtn.classList.add('active');
+      tabFormatadorBtn.classList.remove('active');
+      apoioDiv.style.display = '';
+      formatadorDiv.style.display = 'none';
+    });
+
+    // Inicial: garante que aba Formatador esteja visível
+    formatadorDiv.style.display = '';
+    apoioDiv.style.display = 'none';
+  </script>
+</body>
+</html>
