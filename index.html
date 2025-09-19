@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Formatador de Chamados - NOC / Lanlink</title>
   <style>
-    /* --- Mantive seu CSS original e acrescentei apenas regras pequenas para abas, modal e cards --- */
+    
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #f4f6f9;
@@ -112,12 +112,12 @@
       0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; }
     }
 
-    /* === ABAS (pequena barra de navegação) --- mantive discreto para não alterar layout */
+    /* === ABAS (pequena barra de navegação) --- */
     .tabs { display:flex; gap:8px; justify-content:flex-start; margin-top: 18px; margin-bottom:6px; }
     .tabs button { padding:8px 12px; border-radius:8px; border:1px solid #d0d7e0; background:#fff; cursor:pointer; font-weight:600; color:#333; }
     .tabs button.active { background:#0066cc; color:#fff; border-color:#0055aa; }
 
-    /* === Modal de Alerta (visualmente chamativo, sem som) === */
+    /* === Modal de Alerta (visualmente chamativo) === */
     .modal {
       display:none;
       position:fixed;
@@ -170,13 +170,13 @@
   <div class="container">
     <h1>Organizador de Chamados — NOC — ETICE / Lanlink</h1> 
 
-    <!-- Abas: Formatador (padrão) e Central de Apoio (importada do Código 2) --> <!-- Home = Formatador, troquei o nome da Aba de Formatador para Home -->
+    <!-- Abas: Formatador (padrão) e Central de Apoio --> <!-- Home = Formatador, troquei o nome da Aba de Formatador para Home -->
     <div class="tabs" role="tablist">
       <button id="tab-formatador" class="active" aria-controls="formatador">Home</button>
       <button id="tab-apoio" aria-controls="apoio">Central de Apoio</button>
     </div>
 
-    <!-- === ABA FORMATADOR (seu Código 1, mantido) === -->
+    <!-- === ABA FORMATADOR === -->
     <div id="formatador">
       <p>Cole abaixo a linha de <strong>ALERTA</strong> do Zabbix, informe o atendente e gere os blocos prontos.</p>
 
@@ -198,7 +198,7 @@ ALC-AP00-CC-015134_ALCANTRAS_PRACA_MATRIZ está inacessível"></textarea>
         <button id="saveName" class="secondary">Salvar nome</button>
       </div>
 
-      <!-- ALERTA DE HORÁRIO (inline, preservado do Código 1) -->
+      <!-- ALERTA DE HORÁRIO (inline) -->
       <div id="alertaHorario" class="alerta-horario" aria-live="polite">
         ⚠️ (ATENÇÃO — Horário de Acionamento. Verifique se esse alerta requer acionamento!)
       </div>
@@ -228,7 +228,7 @@ ALC-AP00-CC-015134_ALCANTRAS_PRACA_MATRIZ está inacessível"></textarea>
       <div id="nomeResultado"></div>
     </div>
 
-    <!-- === ABA CENTRAL DE APOIO (conteúdo importado do Código 2) === -->
+    <!-- === ABA CENTRAL DE APOIO === -->
     <div id="apoio" style="display:none; margin-top:10px;">
       <h2>Central de Apoio</h2>
 
@@ -333,7 +333,7 @@ Verifiquei que houve uma queda de rede na (unidade). Poderia me informar se houv
     </div>
   </div>
 
-  <!-- === Modal (alerta de acionamento, sem som) === -->
+  <!-- === Modal (alerta de acionamento) === -->
   <div id="alertModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-content">
       ⚠️ ATENÇÃO — Horário de Acionamento. Verifique se esse alerta requer acionamento!
@@ -343,7 +343,7 @@ Verifiquei que houve uma queda de rede na (unidade). Poderia me informar se houv
   </div>
 
   <script>
-    // --- Siglas (mantive exatamente) ---
+    // --- Siglas) ---
     const rawSiglas = `CRE	Carire/Ce	IBC	Ibicuitinga/Ce	MLG	Milagres/Ce	QTP	Quiterianopolis/Ce
 ABR	Abaiara/Ce	CRR	Caririacu/Ce	ICP	Icapui/Ce	MIL	Milha/Ce	QXD	Quixada/Ce
 ACP	Acarape/Ce	CRU	Carius/Ce	ICO	Ico/Ce	MIR	Miraima/Ce	QXL	Quixelo/Ce
@@ -459,10 +459,10 @@ CRD	Caridade/Ce	IBP	Ibiapina/Ce	MCA	Meruoca/Ce	PTT	Potiretama/Ce	VCS	Vicosa Do C
       const affected = affectedEl.value.trim();
       if (!alerta){ alert('Cole a linha completa do ALERTA do Zabbix.'); return; }
 
-      // Mostrar inline ALERTA (mantive)
+      // Mostrar inline ALERTA 
       if (precisaExibirAlerta()) {
         alertaHorario.style.display = 'block';
-        // Mostrar modal chamativo (sem som)
+        // Mostrar modal chamativo 
         alertModal.style.display = 'flex';
         alertModal.setAttribute('aria-hidden', 'false');
       } else {
@@ -479,7 +479,7 @@ CRD	Caridade/Ce	IBP	Ibiapina/Ce	MCA	Meruoca/Ce	PTT	Potiretama/Ce	VCS	Vicosa Do C
       const dataHoje = new Date().toLocaleDateString('pt-BR');
       const afetadosFormatado = affected ? affected.split(/\n/).map(a=>a.trim()).filter(a=>a).join('\n') : '-';
 
-      // === IFS Assyst (formatação solicitada) ===
+      // === IFS Assyst ===
       const ifsLines = [];
       ifsLines.push(`<strong>RESUMO:</strong>   ${incidente}`);
       ifsLines.push(`<strong>\nMonitoramento Etice:</strong> ${attendant}`);
@@ -576,7 +576,7 @@ CRD	Caridade/Ce	IBP	Ibiapina/Ce	MCA	Meruoca/Ce	PTT	Potiretama/Ce	VCS	Vicosa Do C
       }
     });
 
-    // === Controle de abas (Formatador / Central de Apoio) ===
+    // === Controle de abas (Formatador = Home / Central de Apoio) ===
     const tabFormatadorBtn = document.getElementById('tab-formatador');
     const tabApoioBtn = document.getElementById('tab-apoio');
     const formatadorDiv = document.getElementById('formatador');
@@ -595,9 +595,10 @@ CRD	Caridade/Ce	IBP	Ibiapina/Ce	MCA	Meruoca/Ce	PTT	Potiretama/Ce	VCS	Vicosa Do C
       formatadorDiv.style.display = 'none';
     });
 
-    // Inicial: garante que aba Formatador esteja visível
+    // Inicial: garante que aba (Formatador = Home) esteja visível
     formatadorDiv.style.display = '';
     apoioDiv.style.display = 'none';
   </script>
 </body>
 </html>
+
